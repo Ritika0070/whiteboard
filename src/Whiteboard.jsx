@@ -1,7 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
-import { MessageSquare, Send, Pen, Eraser, Trash2, X } from "lucide-react";
 import JoinScreen from "./JoinScreen";
 
 const socket = io(process.env.REACT_APP_BACKEND_URL || "http://localhost:4000");

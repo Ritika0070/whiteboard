@@ -22,70 +22,35 @@ function Whiteboard() {
 
   useEffect(() => {
     if (!userName) return;
-
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - 60;
-
     socket.emit("join-room", { roomId, userName });
-
-    socket.on("load-strokes", (strokes) => {
-      strokes.forEach((stroke) => drawLine(stroke));
-    });
-
+    socket.on("load-strokes", (strokes) => { strokes.forEach((stroke) => drawLine(stroke)); });
     socket.on("draw", (data) => drawLine(data));
-
-    socket.on("clear", () => {
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
-
-    socket.on("cursor-move", ({ id, x, y, name }) => {
-      setCursors((prev) => ({ ...prev, [id]: { x, y, name } }));
-    });
-
-    socket.on("user-left", (id) => {
-      setCursors((prev) => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
-    });
-
-    socket.on("chat-message", (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
-
+    socket.on("clear", () => { const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); });
+    socket.on("cursor-move", ({ id, x, y, name }) => { setCursors((prev) => ({ ...prev, [id]: { x, y, name } })); });
+    socket.on("user-left", (id) => { setCursors((prev) => { const updated = { ...prev }; delete updated[id]; return updated; }); });
+    socket.on("chat-message", (data) => { setMessages((prev) => [...prev, data]); });
     const preventScroll = (e) => e.preventDefault();
     canvas.addEventListener("touchstart", preventScroll, { passive: false });
     canvas.addEventListener("touchmove", preventScroll, { passive: false });
-
     return () => {
-      socket.off("draw");
-      socket.off("clear");
-      socket.off("load-strokes");
-      socket.off("cursor-move");
-      socket.off("user-left");
-      socket.off("chat-message");
+      socket.off("draw"); socket.off("clear"); socket.off("load-strokes");
+      socket.off("cursor-move"); socket.off("user-left"); socket.off("chat-message");
       canvas.removeEventListener("touchstart", preventScroll);
       canvas.removeEventListener("touchmove", preventScroll);
     };
   }, [roomId, userName]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  if (!userName) {
-    return <JoinScreen onJoin={(name) => setUserName(name)} />;
-  }
+  if (!userName) return <JoinScreen onJoin={(name) => setUserName(name)} />;
 
   const drawLine = ({ x0, y0, x1, y1, color, brushSize, tool }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
     ctx.lineWidth = tool === "eraser" ? 20 : brushSize;
     ctx.lineCap = "round";
     ctx.strokeStyle = tool === "eraser" ? "#ffffff" : color;
@@ -95,40 +60,23 @@ function Whiteboard() {
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    if (e.touches) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      };
-    }
+    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e) => {
-    isDrawing.current = true;
-    lastPos.current = getPos(e);
-  };
+  const startDrawing = (e) => { isDrawing.current = true; lastPos.current = getPos(e); };
 
   const draw = (e) => {
     const currentPos = getPos(e);
     socket.emit("cursor-move", { roomId, x: currentPos.x, y: currentPos.y, name: userName });
     if (!isDrawing.current) return;
-    const data = {
-      x0: lastPos.current.x,
-      y0: lastPos.current.y,
-      x1: currentPos.x,
-      y1: currentPos.y,
-      color, brushSize, tool, roomId, userName,
-    };
+    const data = { x0: lastPos.current.x, y0: lastPos.current.y, x1: currentPos.x, y1: currentPos.y, color, brushSize, tool, roomId, userName };
     drawLine(data);
     socket.emit("draw", data);
     lastPos.current = currentPos;
   };
 
-  const stopDrawing = () => {
-    isDrawing.current = false;
-    lastPos.current = null;
-  };
+  const stopDrawing = () => { isDrawing.current = false; lastPos.current = null; };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -143,128 +91,48 @@ function Whiteboard() {
     setChatInput("");
   };
 
-  const handleChatKey = (e) => {
-    if (e.key === "Enter") sendMessage();
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-b border-gray-300 h-14 overflow-x-auto">
-        <span className="text-xs text-gray-400 font-mono whitespace-nowrap">Room: {roomId}</span>
-        <span className="text-xs font-medium text-blue-500 whitespace-nowrap">{userName}</span>
-
-        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => { setColor(e.target.value); setTool("pen"); }}
-          className="w-8 h-8 cursor-pointer rounded flex-shrink-0"
-        />
-
-        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
-        <input
-          type="range" min="1" max="20" value={brushSize}
-          onChange={(e) => setBrushSize(parseInt(e.target.value))}
-          className="w-20 flex-shrink-0"
-        />
-
-        <button
-          onClick={() => setTool("pen")}
-          className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "pen" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}
-        >
-          <Pen size={14} /> Pen
-        </button>
-
-        <button
-          onClick={() => setTool("eraser")}
-          className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "eraser" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}
-        >
-          <Eraser size={14} /> Eraser
-        </button>
-
-        <button
-          onClick={clearCanvas}
-          className="flex items-center gap-1 px-3 py-1 rounded text-sm font-medium bg-red-500 text-white whitespace-nowrap flex-shrink-0"
-        >
-          <Trash2 size={14} /> Clear
-        </button>
-
-        <button
-          onClick={() => setChatOpen((prev) => !prev)}
-          className={`flex items-center gap-1 ml-auto px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${chatOpen ? "bg-purple-600 text-white" : "bg-purple-500 text-white"}`}
-        >
-          <MessageSquare size={14} /> Chat
-        </button>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", background: "white" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", background: "#f3f4f6", borderBottom: "1px solid #d1d5db", height: "56px", overflowX: "auto", flexShrink: 0 }}>
+        <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "monospace", whiteSpace: "nowrap" }}>Room: {roomId}</span>
+        <span style={{ fontSize: "12px", fontWeight: 600, color: "#3b82f6", whiteSpace: "nowrap" }}>{userName}</span>
+        <label style={{ fontSize: "13px", color: "#374151", whiteSpace: "nowrap" }}>Color:</label>
+        <input type="color" value={color} onChange={(e) => { setColor(e.target.value); setTool("pen"); }} style={{ width: "32px", height: "32px", cursor: "pointer", border: "none", borderRadius: "4px", flexShrink: 0 }} />
+        <label style={{ fontSize: "13px", color: "#374151", whiteSpace: "nowrap" }}>Size:</label>
+        <input type="range" min="1" max="20" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} style={{ width: "80px", flexShrink: 0 }} />
+        <button onClick={() => setTool("pen")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: tool === "pen" ? "none" : "1px solid #d1d5db", background: tool === "pen" ? "#3b82f6" : "white", color: tool === "pen" ? "white" : "#374151" }}>Pen</button>
+        <button onClick={() => setTool("eraser")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: tool === "eraser" ? "none" : "1px solid #d1d5db", background: tool === "eraser" ? "#3b82f6" : "white", color: tool === "eraser" ? "white" : "#374151" }}>Eraser</button>
+        <button onClick={clearCanvas} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: "none", background: "#ef4444", color: "white" }}>Clear</button>
+        <button onClick={() => setChatOpen(prev => !prev)} style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: "none", background: "#8b5cf6", color: "white" }}>{chatOpen ? "Close Chat" : "Chat"}</button>
       </div>
 
-      {/* Main area */}
-      <div className="relative flex-1 flex overflow-hidden">
-
-        {/* Canvas */}
-        <div className="relative flex-1">
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
-            className="cursor-crosshair touch-none"
-            style={{ touchAction: "none" }}
-          />
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ cursor: "crosshair", touchAction: "none", display: "block" }} />
           {Object.entries(cursors).map(([id, { x, y, name }]) => (
-            <div key={id} className="absolute pointer-events-none" style={{ left: x, top: y }}>
-              <div className="w-3 h-3 bg-red-500 rounded-full" />
-              <span className="text-xs bg-red-500 text-white px-1 rounded ml-1 whitespace-nowrap">{name}</span>
+            <div key={id} style={{ position: "absolute", left: x, top: y, pointerEvents: "none" }}>
+              <div style={{ width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%" }} />
+              <span style={{ fontSize: "11px", background: "#ef4444", color: "white", padding: "1px 4px", borderRadius: "4px", marginLeft: "4px", whiteSpace: "nowrap" }}>{name}</span>
             </div>
           ))}
         </div>
 
-        {/* Chat Sidebar */}
         {chatOpen && (
-          <div className="w-64 flex flex-col border-l border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border-b border-gray-200">
-              <span className="font-semibold text-sm text-gray-700 flex items-center gap-1">
-                <MessageSquare size={14} /> Chat
-              </span>
-              <button onClick={() => setChatOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2">
-              {messages.length === 0 && (
-                <p className="text-xs text-gray-400 text-center mt-4">No messages yet...</p>
-              )}
+          <div style={{ width: "260px", display: "flex", flexDirection: "column", borderLeft: "1px solid #e5e7eb", background: "#f9fafb", flexShrink: 0 }}>
+            <div style={{ padding: "10px 12px", background: "#f3f4f6", borderBottom: "1px solid #e5e7eb", fontWeight: 600, fontSize: "13px", color: "#374151" }}>Chat</div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              {messages.length === 0 && <p style={{ fontSize: "12px", color: "#9ca3af", textAlign: "center", marginTop: "16px" }}>No messages yet...</p>}
               {messages.map((msg, i) => (
-                <div key={i} className={`flex flex-col ${msg.name === userName ? "items-end" : "items-start"}`}>
-                  <span className="text-xs text-gray-400">{msg.name} · {msg.time}</span>
-                  <span className={`text-sm px-3 py-1 rounded-2xl max-w-full break-words ${msg.name === userName ? "bg-blue-500 text-white" : "bg-white border border-gray-200 text-gray-800"}`}>
-                    {msg.message}
-                  </span>
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.name === userName ? "flex-end" : "flex-start" }}>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>{msg.name} · {msg.time}</span>
+                  <span style={{ fontSize: "13px", padding: "6px 12px", borderRadius: "16px", maxWidth: "100%", wordBreak: "break-word", background: msg.name === userName ? "#3b82f6" : "white", color: msg.name === userName ? "white" : "#1f2937", border: msg.name === userName ? "none" : "1px solid #e5e7eb" }}>{msg.message}</span>
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
-
-            <div className="flex items-center gap-1 px-2 py-2 border-t border-gray-200">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={handleChatKey}
-                placeholder="Type a message..."
-                className="flex-1 text-sm border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              />
-              <button
-                onClick={sendMessage}
-                className="bg-purple-500 text-white p-2 rounded-xl hover:bg-purple-600"
-              >
-                <Send size={16} />
-              </button>
+            <div style={{ display: "flex", gap: "6px", padding: "8px", borderTop: "1px solid #e5e7eb" }}>
+              <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} placeholder="Type a message..." style={{ flex: 1, fontSize: "13px", border: "1px solid #d1d5db", borderRadius: "12px", padding: "8px 12px", outline: "none" }} />
+              <button onClick={sendMessage} style={{ background: "#8b5cf6", color: "white", border: "none", borderRadius: "12px", padding: "8px 14px", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}>Send</button>
             </div>
           </div>
         )}

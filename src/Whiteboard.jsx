@@ -2,7 +2,8 @@ import { useRef, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:4000");
+// const socket = io("http://localhost:4000");
+const socket = io("https://whiteboard-backend-t4ub.onrender.com");
 
 function Whiteboard() {
   const canvasRef = useRef(null);

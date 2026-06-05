@@ -2,8 +2,6 @@ import { useRef, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 
-// const socket = io("http://localhost:4000");
-// const socket = io("https://whiteboard-backend-t4ub.onrender.com");
 const socket = io(process.env.REACT_APP_BACKEND_URL || "http://localhost:4000");
 
 function Whiteboard() {
@@ -22,7 +20,6 @@ function Whiteboard() {
 
     socket.emit("join-room", roomId);
 
-    // Purani drawings load karo
     socket.on("load-strokes", (strokes) => {
       strokes.forEach((stroke) => drawLine(stroke));
     });
@@ -36,10 +33,17 @@ function Whiteboard() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
+    // Touch scroll rokna
+    const preventScroll = (e) => e.preventDefault();
+    canvas.addEventListener("touchstart", preventScroll, { passive: false });
+    canvas.addEventListener("touchmove", preventScroll, { passive: false });
+
     return () => {
       socket.off("draw");
       socket.off("clear");
       socket.off("load-strokes");
+      canvas.removeEventListener("touchstart", preventScroll);
+      canvas.removeEventListener("touchmove", preventScroll);
     };
   }, [roomId]);
 
@@ -55,9 +59,17 @@ function Whiteboard() {
     ctx.stroke();
   };
 
+  // Mouse aur touch dono ke liye position
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
+
+    if (e.touches) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    }
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
@@ -103,33 +115,35 @@ function Whiteboard() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-4 px-4 py-2 bg-gray-100 border-b border-gray-300 h-14">
+      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-b border-gray-300 h-14 overflow-x-auto">
 
-        <span className="text-xs text-gray-400 font-mono">Room: {roomId}</span>
+        <span className="text-xs text-gray-400 font-mono whitespace-nowrap">
+          Room: {roomId}
+        </span>
 
-        <label className="text-sm font-medium text-gray-700">Color:</label>
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
         <input
           type="color"
           value={color}
           onChange={(e) => { setColor(e.target.value); setTool("pen"); }}
-          className="w-8 h-8 cursor-pointer rounded"
+          className="w-8 h-8 cursor-pointer rounded flex-shrink-0"
         />
 
-        <label className="text-sm font-medium text-gray-700">Size:</label>
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
         <input
           type="range"
           min="1"
           max="20"
           value={brushSize}
           onChange={(e) => setBrushSize(parseInt(e.target.value))}
-          className="w-24"
+          className="w-20 flex-shrink-0"
         />
 
         <button
           onClick={() => setTool("pen")}
-          className={`px-3 py-1 rounded text-sm font-medium ${
+          className={`px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${
             tool === "pen"
               ? "bg-blue-500 text-white"
               : "bg-white text-gray-700 border border-gray-300"
@@ -140,7 +154,7 @@ function Whiteboard() {
 
         <button
           onClick={() => setTool("eraser")}
-          className={`px-3 py-1 rounded text-sm font-medium ${
+          className={`px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${
             tool === "eraser"
               ? "bg-blue-500 text-white"
               : "bg-white text-gray-700 border border-gray-300"
@@ -151,19 +165,26 @@ function Whiteboard() {
 
         <button
           onClick={clearCanvas}
-          className="px-3 py-1 rounded text-sm font-medium bg-red-500 text-white"
+          className="px-3 py-1 rounded text-sm font-medium bg-red-500 text-white whitespace-nowrap flex-shrink-0"
         >
           Clear
         </button>
       </div>
 
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
+        // Mouse events
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
-        className="cursor-crosshair"
+        // Touch events
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+        className="cursor-crosshair touch-none"
+        style={{ touchAction: "none" }}
       />
     </div>
   );

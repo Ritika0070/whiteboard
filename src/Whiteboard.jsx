@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
+import { MessageSquare, Send, Pen, Eraser, Trash2, X } from "lucide-react";
 import JoinScreen from "./JoinScreen";
 
 const socket = io(process.env.REACT_APP_BACKEND_URL || "http://localhost:4000");
@@ -17,7 +18,7 @@ function Whiteboard() {
   const [cursors, setCursors] = useState({});
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
-  const [chatOpen, setChatOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const { roomId } = useParams();
 
   useEffect(() => {
@@ -152,38 +153,49 @@ function Whiteboard() {
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-b border-gray-300 h-14 overflow-x-auto">
         <span className="text-xs text-gray-400 font-mono whitespace-nowrap">Room: {roomId}</span>
-        <span className="text-xs font-medium text-blue-500 whitespace-nowrap">👤 {userName}</span>
+        <span className="text-xs font-medium text-blue-500 whitespace-nowrap">{userName}</span>
 
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
-        <input type="color" value={color}
+        <input
+          type="color"
+          value={color}
           onChange={(e) => { setColor(e.target.value); setTool("pen"); }}
           className="w-8 h-8 cursor-pointer rounded flex-shrink-0"
         />
 
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
-        <input type="range" min="1" max="20" value={brushSize}
+        <input
+          type="range" min="1" max="20" value={brushSize}
           onChange={(e) => setBrushSize(parseInt(e.target.value))}
           className="w-20 flex-shrink-0"
         />
 
-        <button onClick={() => setTool("pen")}
-          className={`px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "pen" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}>
-          Pen
+        <button
+          onClick={() => setTool("pen")}
+          className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "pen" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}
+        >
+          <Pen size={14} /> Pen
         </button>
 
-        <button onClick={() => setTool("eraser")}
-          className={`px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "eraser" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}>
-          Eraser
+        <button
+          onClick={() => setTool("eraser")}
+          className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${tool === "eraser" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border border-gray-300"}`}
+        >
+          <Eraser size={14} /> Eraser
         </button>
 
-        <button onClick={clearCanvas}
-          className="px-3 py-1 rounded text-sm font-medium bg-red-500 text-white whitespace-nowrap flex-shrink-0">
-          Clear
+        <button
+          onClick={clearCanvas}
+          className="flex items-center gap-1 px-3 py-1 rounded text-sm font-medium bg-red-500 text-white whitespace-nowrap flex-shrink-0"
+        >
+          <Trash2 size={14} /> Clear
         </button>
 
-        <button onClick={() => setChatOpen((o) => !o)}
-          className="ml-auto px-3 py-1 rounded text-sm font-medium bg-purple-500 text-white whitespace-nowrap flex-shrink-0">
-          💬 Chat
+        <button
+          onClick={() => setChatOpen((prev) => !prev)}
+          className={`flex items-center gap-1 ml-auto px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex-shrink-0 ${chatOpen ? "bg-purple-600 text-white" : "bg-purple-500 text-white"}`}
+        >
+          <MessageSquare size={14} /> Chat
         </button>
       </div>
 
@@ -215,8 +227,13 @@ function Whiteboard() {
         {/* Chat Sidebar */}
         {chatOpen && (
           <div className="w-64 flex flex-col border-l border-gray-200 bg-gray-50">
-            <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 font-semibold text-sm text-gray-700">
-              💬 Chat
+            <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border-b border-gray-200">
+              <span className="font-semibold text-sm text-gray-700 flex items-center gap-1">
+                <MessageSquare size={14} /> Chat
+              </span>
+              <button onClick={() => setChatOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={16} />
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2">
@@ -243,9 +260,11 @@ function Whiteboard() {
                 placeholder="Type a message..."
                 className="flex-1 text-sm border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
-              <button onClick={sendMessage}
-                className="bg-purple-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-purple-600">
-                ➤
+              <button
+                onClick={sendMessage}
+                className="bg-purple-500 text-white p-2 rounded-xl hover:bg-purple-600"
+              >
+                <Send size={16} />
               </button>
             </div>
           </div>

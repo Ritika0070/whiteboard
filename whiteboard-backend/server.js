@@ -68,6 +68,14 @@ io.on("connection", (socket) => {
     await Stroke.deleteMany({ roomId });
   });
 
+  socket.on("chat-message", (data) => {
+    io.to(data.roomId).emit("chat-message", {
+      name: data.name,
+      message: data.message,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    });
+  });
+
   socket.on("disconnect", () => {
     const roomId = socket.data.roomId;
     if (roomId) {

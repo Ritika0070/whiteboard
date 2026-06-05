@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
+import JoinScreen from "./JoinScreen";
 
 const socket = io(process.env.REACT_APP_BACKEND_URL || "http://localhost:4000");
 
@@ -11,14 +12,18 @@ function Whiteboard() {
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
   const [tool, setTool] = useState("pen");
+  const [userName, setUserName] = useState(null);
+  const [cursors, setCursors] = useState({});
   const { roomId } = useParams();
 
   useEffect(() => {
+    if (!userName) return; // userName nahi hai toh kuch mat karo
+
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - 60;
 
-    socket.emit("join-room", roomId);
+    socket.emit("join-room", { roomId, userName });
 
     socket.on("load-strokes", (strokes) => {
       strokes.forEach((stroke) => drawLine(stroke));
@@ -33,7 +38,18 @@ function Whiteboard() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
-    // Touch scroll rokna
+    socket.on("cursor-move", ({ id, x, y, name }) => {
+      setCursors((prev) => ({ ...prev, [id]: { x, y, name } }));
+    });
+
+    socket.on("user-left", (id) => {
+      setCursors((prev) => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
+    });
+
     const preventScroll = (e) => e.preventDefault();
     canvas.addEventListener("touchstart", preventScroll, { passive: false });
     canvas.addEventListener("touchmove", preventScroll, { passive: false });
@@ -42,10 +58,17 @@ function Whiteboard() {
       socket.off("draw");
       socket.off("clear");
       socket.off("load-strokes");
+      socket.off("cursor-move");
+      socket.off("user-left");
       canvas.removeEventListener("touchstart", preventScroll);
       canvas.removeEventListener("touchmove", preventScroll);
     };
-  }, [roomId]);
+  }, [roomId, userName]);
+
+  // JoinScreen — useEffect ke baad
+  if (!userName) {
+    return <JoinScreen onJoin={(name) => setUserName(name)} />;
+  }
 
   const drawLine = ({ x0, y0, x1, y1, color, brushSize, tool }) => {
     const canvas = canvasRef.current;
@@ -59,11 +82,9 @@ function Whiteboard() {
     ctx.stroke();
   };
 
-  // Mouse aur touch dono ke liye position
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-
     if (e.touches) {
       return {
         x: e.touches[0].clientX - rect.left,
@@ -82,8 +103,16 @@ function Whiteboard() {
   };
 
   const draw = (e) => {
-    if (!isDrawing.current) return;
     const currentPos = getPos(e);
+
+    socket.emit("cursor-move", {
+      roomId,
+      x: currentPos.x,
+      y: currentPos.y,
+      name: userName,
+    });
+
+    if (!isDrawing.current) return;
 
     const data = {
       x0: lastPos.current.x,
@@ -94,11 +123,11 @@ function Whiteboard() {
       brushSize,
       tool,
       roomId,
+      userName,
     };
 
     drawLine(data);
     socket.emit("draw", data);
-
     lastPos.current = currentPos;
   };
 
@@ -116,11 +145,13 @@ function Whiteboard() {
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-b border-gray-300 h-14 overflow-x-auto">
-
         <span className="text-xs text-gray-400 font-mono whitespace-nowrap">
           Room: {roomId}
+        </span>
+
+        <span className="text-xs font-medium text-blue-500 whitespace-nowrap">
+          👤 {userName}
         </span>
 
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
@@ -171,21 +202,33 @@ function Whiteboard() {
         </button>
       </div>
 
-      {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        // Mouse events
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        // Touch events
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none"
-        style={{ touchAction: "none" }}
-      />
+      <div className="relative flex-1">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          className="cursor-crosshair touch-none"
+          style={{ touchAction: "none" }}
+        />
+
+        {Object.entries(cursors).map(([id, { x, y, name }]) => (
+          <div
+            key={id}
+            className="absolute pointer-events-none"
+            style={{ left: x, top: y }}
+          >
+            <div className="w-3 h-3 bg-red-500 rounded-full" />
+            <span className="text-xs bg-red-500 text-white px-1 rounded ml-1 whitespace-nowrap">
+              {name}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

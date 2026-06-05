@@ -9,12 +9,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connect
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected!"))
   .catch((err) => console.log("MongoDB error:", err));
 
-// Drawing schema
 const strokeSchema = new mongoose.Schema({
   roomId: String,
   x0: Number,
@@ -24,18 +22,13 @@ const strokeSchema = new mongoose.Schema({
   color: String,
   brushSize: Number,
   tool: String,
+  userName: String,
 });
 
 const Stroke = mongoose.model("Stroke", strokeSchema);
 
 const server = http.createServer(app);
 
-// const io = new Server(server, {
-//   cors: {
-//     origin: "http://localhost:3000",
-//     methods: ["GET", "POST"],
-//   },
-// });
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:3000", "https://whiteboard-two-alpha.vercel.app"],
@@ -46,30 +39,40 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join-room", async (roomId) => {
+  socket.on("join-room", async ({ roomId, userName }) => {
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    socket.data.roomId = roomId;
+    socket.data.userName = userName;
+    console.log(`${userName} joined room ${roomId}`);
 
-    // Purani drawings bhejo naye user ko
     const strokes = await Stroke.find({ roomId });
     socket.emit("load-strokes", strokes);
   });
 
   socket.on("draw", async (data) => {
     socket.to(data.roomId).emit("draw", data);
-
-    // MongoDB mein save karo
     await Stroke.create(data);
+  });
+
+  socket.on("cursor-move", (data) => {
+    socket.to(data.roomId).emit("cursor-move", {
+      id: socket.id,
+      x: data.x,
+      y: data.y,
+      name: data.name,
+    });
   });
 
   socket.on("clear", async (roomId) => {
     socket.to(roomId).emit("clear");
-
-    // MongoDB se delete karo
     await Stroke.deleteMany({ roomId });
   });
 
   socket.on("disconnect", () => {
+    const roomId = socket.data.roomId;
+    if (roomId) {
+      socket.to(roomId).emit("user-left", socket.id);
+    }
     console.log("User disconnected:", socket.id);
   });
 });

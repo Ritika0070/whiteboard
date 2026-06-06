@@ -106,7 +106,7 @@ function Whiteboard() {
         <button onClick={() => setChatOpen(prev => !prev)} style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: "none", background: "#8b5cf6", color: "white" }}>{chatOpen ? "Close Chat" : "Chat"}</button>
       </div>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "visible" }}>
         <div style={{ flex: 1, position: "relative" }}>
           <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ cursor: "crosshair", touchAction: "none", display: "block" }} />
           {Object.entries(cursors).map(([id, { x, y, name }]) => (

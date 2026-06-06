@@ -92,7 +92,7 @@ function Whiteboard() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", background: "white" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "visible", background: "white" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", background: "#f3f4f6", borderBottom: "1px solid #d1d5db", height: "56px", overflowX: "auto", flexShrink: 0 }}>
         <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "monospace", whiteSpace: "nowrap" }}>Room: {roomId}</span>
         <span style={{ fontSize: "12px", fontWeight: 600, color: "#3b82f6", whiteSpace: "nowrap" }}>{userName}</span>

@@ -45,6 +45,10 @@ io.on("connection", (socket) => {
     socket.data.userName = userName;
     console.log(`${userName} joined room ${roomId}`);
 
+    const roomSockets = await io.in(roomId).fetchSockets();
+    const users = roomSockets.map(s => s.data.userName);
+    io.to(roomId).emit("online-users", users);
+
     const strokes = await Stroke.find({ roomId });
     socket.emit("load-strokes", strokes);
   });
@@ -80,6 +84,11 @@ io.on("connection", (socket) => {
     const roomId = socket.data.roomId;
     if (roomId) {
       socket.to(roomId).emit("user-left", socket.id);
+      setTimeout(async () => {
+        const roomSockets = await io.in(roomId).fetchSockets();
+        const users = roomSockets.map(s => s.data.userName);
+        io.to(roomId).emit("online-users", users);
+      }, 500);
     }
     console.log("User disconnected:", socket.id);
   });

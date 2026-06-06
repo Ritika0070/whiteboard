@@ -26,12 +26,21 @@ function Whiteboard() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - 60;
     socket.emit("join-room", { roomId, userName });
-    socket.on("load-strokes", (strokes) => { strokes.forEach((stroke) => drawLine(stroke)); });
+    socket.on("load-strokes", (strokes) => { strokes.forEach((s) => drawLine(s)); });
     socket.on("draw", (data) => drawLine(data));
-    socket.on("clear", () => { const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); });
-    socket.on("cursor-move", ({ id, x, y, name }) => { setCursors((prev) => ({ ...prev, [id]: { x, y, name } })); });
-    socket.on("user-left", (id) => { setCursors((prev) => { const updated = { ...prev }; delete updated[id]; return updated; }); });
-    socket.on("chat-message", (data) => { setMessages((prev) => [...prev, data]); });
+    socket.on("clear", () => {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+    socket.on("cursor-move", ({ id, x, y, name }) => {
+      setCursors((prev) => ({ ...prev, [id]: { x, y, name } }));
+    });
+    socket.on("user-left", (id) => {
+      setCursors((prev) => { const u = { ...prev }; delete u[id]; return u; });
+    });
+    socket.on("chat-message", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
     const preventScroll = (e) => e.preventDefault();
     canvas.addEventListener("touchstart", preventScroll, { passive: false });
     canvas.addEventListener("touchmove", preventScroll, { passive: false });
@@ -43,7 +52,9 @@ function Whiteboard() {
     };
   }, [roomId, userName]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   if (!userName) return <JoinScreen onJoin={(name) => setUserName(name)} />;
 
@@ -92,7 +103,8 @@ function Whiteboard() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "visible", background: "white" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "white" }}>
+
       <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", background: "#f3f4f6", borderBottom: "1px solid #d1d5db", height: "56px", overflowX: "auto", flexShrink: 0 }}>
         <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "monospace", whiteSpace: "nowrap" }}>Room: {roomId}</span>
         <span style={{ fontSize: "12px", fontWeight: 600, color: "#3b82f6", whiteSpace: "nowrap" }}>{userName}</span>
@@ -100,15 +112,28 @@ function Whiteboard() {
         <input type="color" value={color} onChange={(e) => { setColor(e.target.value); setTool("pen"); }} style={{ width: "32px", height: "32px", cursor: "pointer", border: "none", borderRadius: "4px", flexShrink: 0 }} />
         <label style={{ fontSize: "13px", color: "#374151", whiteSpace: "nowrap" }}>Size:</label>
         <input type="range" min="1" max="20" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} style={{ width: "80px", flexShrink: 0 }} />
-        <button onClick={() => setTool("pen")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: tool === "pen" ? "none" : "1px solid #d1d5db", background: tool === "pen" ? "#3b82f6" : "white", color: tool === "pen" ? "white" : "#374151" }}>Pen</button>
-        <button onClick={() => setTool("eraser")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: tool === "eraser" ? "none" : "1px solid #d1d5db", background: tool === "eraser" ? "#3b82f6" : "white", color: tool === "eraser" ? "white" : "#374151" }}>Eraser</button>
-        <button onClick={clearCanvas} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: "none", background: "#ef4444", color: "white" }}>Clear</button>
-        <button onClick={() => setChatOpen(prev => !prev)} style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, border: "none", background: "#8b5cf6", color: "white" }}>{chatOpen ? "Close Chat" : "Chat"}</button>
+        <button onClick={() => setTool("pen")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", border: tool === "pen" ? "none" : "1px solid #d1d5db", background: tool === "pen" ? "#3b82f6" : "white", color: tool === "pen" ? "white" : "#374151" }}>Pen</button>
+        <button onClick={() => setTool("eraser")} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", border: tool === "eraser" ? "none" : "1px solid #d1d5db", background: tool === "eraser" ? "#3b82f6" : "white", color: tool === "eraser" ? "white" : "#374151" }}>Eraser</button>
+        <button onClick={clearCanvas} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", border: "none", background: "#ef4444", color: "white" }}>Clear</button>
+        <button onClick={() => setChatOpen(prev => !prev)} style={{ marginLeft: "auto", padding: "4px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer", border: "none", background: chatOpen ? "#7c3aed" : "#8b5cf6", color: "white" }}>
+          {chatOpen ? "Close Chat" : "Chat"}
+        </button>
       </div>
 
-      <div style={{ display: "flex", flex: 1, overflow: "visible" }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+
         <div style={{ flex: 1, position: "relative" }}>
-          <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ cursor: "crosshair", touchAction: "none", display: "block" }} />
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            style={{ cursor: "crosshair", touchAction: "none", display: "block" }}
+          />
           {Object.entries(cursors).map(([id, { x, y, name }]) => (
             <div key={id} style={{ position: "absolute", left: x, top: y, pointerEvents: "none" }}>
               <div style={{ width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%" }} />
@@ -117,25 +142,46 @@ function Whiteboard() {
           ))}
         </div>
 
-        {chatOpen && (
-          <div style={{ width: "260px", display: "flex", flexDirection: "column", borderLeft: "1px solid #e5e7eb", background: "#f9fafb", flexShrink: 0 }}>
-            <div style={{ padding: "10px 12px", background: "#f3f4f6", borderBottom: "1px solid #e5e7eb", fontWeight: 600, fontSize: "13px", color: "#374151" }}>Chat</div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              {messages.length === 0 && <p style={{ fontSize: "12px", color: "#9ca3af", textAlign: "center", marginTop: "16px" }}>No messages yet...</p>}
+        {chatOpen === true && (
+          <div style={{ width: "280px", minWidth: "280px", maxWidth: "280px", height: "100%", display: "flex", flexDirection: "column", borderLeft: "2px solid #8b5cf6", background: "#fafafa" }}>
+            <div style={{ padding: "12px 16px", background: "#8b5cf6", color: "white", fontWeight: 700, fontSize: "14px" }}>
+              Room Chat
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              {messages.length === 0 && (
+                <p style={{ fontSize: "12px", color: "#9ca3af", textAlign: "center", marginTop: "20px" }}>No messages yet. Say hi!</p>
+              )}
               {messages.map((msg, i) => (
                 <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.name === userName ? "flex-end" : "flex-start" }}>
-                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>{msg.name} · {msg.time}</span>
-                  <span style={{ fontSize: "13px", padding: "6px 12px", borderRadius: "16px", maxWidth: "100%", wordBreak: "break-word", background: msg.name === userName ? "#3b82f6" : "white", color: msg.name === userName ? "white" : "#1f2937", border: msg.name === userName ? "none" : "1px solid #e5e7eb" }}>{msg.message}</span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af", marginBottom: "2px" }}>{msg.name} · {msg.time}</span>
+                  <span style={{
+                    fontSize: "13px", padding: "8px 12px", borderRadius: "16px",
+                    maxWidth: "90%", wordBreak: "break-word",
+                    background: msg.name === userName ? "#8b5cf6" : "#e5e7eb",
+                    color: msg.name === userName ? "white" : "#1f2937"
+                  }}>
+                    {msg.message}
+                  </span>
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
-            <div style={{ display: "flex", gap: "6px", padding: "8px", borderTop: "1px solid #e5e7eb" }}>
-              <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} placeholder="Type a message..." style={{ flex: 1, fontSize: "13px", border: "1px solid #d1d5db", borderRadius: "12px", padding: "8px 12px", outline: "none" }} />
-              <button onClick={sendMessage} style={{ background: "#8b5cf6", color: "white", border: "none", borderRadius: "12px", padding: "8px 14px", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}>Send</button>
+            <div style={{ display: "flex", gap: "8px", padding: "10px", borderTop: "1px solid #e5e7eb" }}>
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Type a message..."
+                style={{ flex: 1, fontSize: "13px", border: "1px solid #d1d5db", borderRadius: "20px", padding: "8px 14px", outline: "none" }}
+              />
+              <button onClick={sendMessage} style={{ background: "#8b5cf6", color: "white", border: "none", borderRadius: "20px", padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}>
+                Send
+              </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

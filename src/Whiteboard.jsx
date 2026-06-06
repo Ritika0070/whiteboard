@@ -23,7 +23,7 @@ function Whiteboard() {
   useEffect(() => {
     if (!userName) return;
     const canvas = canvasRef.current;
-    canvas.width = window.innerWidth;
+    canvas.width = canvasRef.current.parentElement.offsetWidth;
     canvas.height = window.innerHeight - 60;
     socket.emit("join-room", { roomId, userName });
     socket.on("load-strokes", (strokes) => { strokes.forEach((s) => drawLine(s)); });

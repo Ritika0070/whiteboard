@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-// Wobbly SVG doodle shapes
 function Cloud({ x, y, size = 1 }) {
   return (
     <motion.svg
@@ -22,7 +21,7 @@ function Star({ x, y, color }) {
   return (
     <motion.svg style={{ position: "absolute", left: x, top: y }} width="24" height="24" viewBox="0 0 24 24"
       animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.2, 1] }}
-      transition={{ duration: 3 + Math.random() * 2, repeat: Infinity }}
+      transition={{ duration: 3, repeat: Infinity }}
     >
       <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" fill={color} stroke={color} strokeWidth="1" opacity="0.8" />
     </motion.svg>
@@ -47,7 +46,7 @@ function Crayon({ x, y, color, rotate = 0 }) {
   return (
     <motion.svg style={{ position: "absolute", left: x, top: y }} width="40" height="40" viewBox="0 0 40 40"
       animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 3 + Math.random(), repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       initial={{ rotate }}
     >
       <rect x="12" y="6" width="10" height="26" rx="2" fill={color} stroke="#00000022" strokeWidth="1.5" />
@@ -83,51 +82,47 @@ export default function Home() {
   const navigate = useNavigate();
 
   const handleCreate = () => {
+    if (!userName.trim()) return;
     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-    if (userName.trim()) navigate(`/room/${id}`);
+    navigate(`/room/${id}`, { state: { userName } });
   };
 
   const handleJoin = () => {
-    if (roomId.trim() && userName.trim()) navigate(`/room/${roomId.trim()}`);
+    if (!roomId.trim() || !userName.trim()) return;
+    navigate(`/room/${roomId.trim()}`, { state: { userName } });
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "#fdf6ec", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", fontFamily: "'Segoe UI', Comic Sans MS, cursive" }}>
 
-      {/* Background blobs */}
       <WobblyCircle x="-60px" y="-60px" color="#FFD93D" size={300} />
       <WobblyCircle x="70%" y="60%" color="#FF6B6B" size={260} />
       <WobblyCircle x="60%" y="-40px" color="#6BCB77" size={200} />
       <WobblyCircle x="-20px" y="60%" color="#4D96FF" size={220} />
 
-      {/* Clouds */}
       <Cloud x="5%" y="8%" size={1.2} />
       <Cloud x="60%" y="5%" size={0.9} />
       <Cloud x="75%" y="55%" size={0.8} />
 
-      {/* Stars */}
       <Star x="15%" y="15%" color="#FFD93D" />
       <Star x="80%" y="20%" color="#FF6B6B" />
       <Star x="10%" y="70%" color="#6BCB77" />
       <Star x="88%" y="75%" color="#4D96FF" />
       <Star x="50%" y="90%" color="#C77DFF" />
 
-      {/* Pencils & Crayons */}
       <Pencil x="3%" y="40%" rotate={-20} />
       <Pencil x="88%" y="35%" rotate={15} />
       <Crayon x="20%" y="82%" color="#FF6B6B" rotate={10} />
       <Crayon x="72%" y="78%" color="#4D96FF" rotate={-15} />
       <Crayon x="45%" y="5%" color="#C77DFF" rotate={5} />
 
-      {/* Doodle lines */}
       <DoodleLine x="5%" y="30%" width={80} color="#FFD93D" rotate={-10} />
       <DoodleLine x="75%" y="40%" width={70} color="#FF6B6B" rotate={12} />
       <DoodleLine x="30%" y="88%" width={90} color="#6BCB77" rotate={-5} />
 
-      {/* Main Card */}
       <motion.div
-        initial={{ opacity: 0, y: 50, rotate: -1 }}
-        animate={{ opacity: 1, y: 0, rotate: 0 }}
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
         style={{
           position: "relative", zIndex: 10,
@@ -140,7 +135,6 @@ export default function Home() {
           textAlign: "center",
         }}
       >
-        {/* Title */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -157,8 +151,7 @@ export default function Home() {
           transition={{ delay: 0.3 }}
           style={{ fontSize: "42px", fontWeight: 900, color: "#1a1a1a", margin: "0 0 4px 0", lineHeight: 1.1, letterSpacing: "-1px" }}
         >
-          Scribble
-          <span style={{ color: "#FF6B6B" }}>!</span>
+          Scribble<span style={{ color: "#FF6B6B" }}>!</span>
         </motion.h1>
 
         <motion.p
@@ -170,23 +163,9 @@ export default function Home() {
           draw, doodle & vibe with friends ✨
         </motion.p>
 
-        {/* Wavy underline */}
-        <DoodleLine x="25%" y="-8px" width={200} color="#FFD93D" />
-
-        {/* Name input */}
-        <motion.input
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          type="text"
-          placeholder="your name..."
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
-          style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box", fontFamily: "inherit", boxShadow: "3px 3px 0 #1a1a1a" }}
-        />
-
+        {/* Mode: default — only Create & Join buttons */}
         {!mode && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ display: "flex", gap: "12px" }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ display: "flex", gap: "12px" }}>
             <motion.button
               whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
               whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
@@ -206,9 +185,19 @@ export default function Home() {
           </motion.div>
         )}
 
+        {/* Mode: create */}
         {mode === "create" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p style={{ color: "#aaa", fontSize: "13px", margin: "0 0 4px 0", fontStyle: "italic" }}>a random room ID will be created for you</p>
+            <input
+              type="text"
+              placeholder="your name..."
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              autoFocus
+              style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontSize: "14px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", boxShadow: "3px 3px 0 #1a1a1a" }}
+            />
+            <p style={{ color: "#aaa", fontSize: "13px", margin: "0", fontStyle: "italic" }}>a random room ID will be created for you</p>
             <motion.button
               whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
               whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
@@ -217,12 +206,21 @@ export default function Home() {
             >
               Let's Go!
             </motion.button>
-            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
+            <button onClick={() => { setMode(null); setUserName(""); }} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
           </motion.div>
         )}
 
+        {/* Mode: join */}
         {mode === "join" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <input
+              type="text"
+              placeholder="your name..."
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              autoFocus
+              style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontSize: "14px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", boxShadow: "3px 3px 0 #1a1a1a" }}
+            />
             <input
               type="text"
               placeholder="enter room ID..."
@@ -239,11 +237,10 @@ export default function Home() {
             >
               Join Room
             </motion.button>
-            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
+            <button onClick={() => { setMode(null); setUserName(""); setRoomId(""); }} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
           </motion.div>
         )}
 
-        {/* Color dots */}
         <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "24px" }}>
           {["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#C77DFF", "#FF9A3C"].map((c, i) => (
             <motion.div key={i} style={{ width: "12px", height: "12px", borderRadius: "50%", background: c, border: "2px solid #1a1a1a" }}

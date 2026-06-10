@@ -6,7 +6,7 @@ import useWhiteboard from "./useWhiteboard";
 
 function Whiteboard() {
   const { roomId } = useParams();
-  const [userName, setUserName] = useState(null);
+  const [userName] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   const {

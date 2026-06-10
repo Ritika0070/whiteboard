@@ -32,7 +32,13 @@ function Whiteboard() {
   const isDrawingPhase = game.gamePhase === "drawing";
   const isLocked = game.isHost && isDrawingPhase;
 
-  // When drawing phase starts, begin the 90s timer
+  const handleTimeUp = () => {
+    if (canvasSubmittedRef.current) return;
+    canvasSubmittedRef.current = true;
+    const canvas = canvasRef.current;
+    if (canvas) game.submitCanvas(canvas.toDataURL());
+  };
+
   useEffect(() => {
     if (isDrawingPhase && !game.isHost) {
       canvasSubmittedRef.current = false;
@@ -41,9 +47,9 @@ function Whiteboard() {
     if (isDrawingPhase && game.isHost) {
       setSubmittedCount(0);
     }
-  }, [isDrawingPhase]); // eslint-disable-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDrawingPhase]);
 
-  // Track submitted count
   useEffect(() => {
     socket.on("game-canvas-submitted", () => {
       setSubmittedCount(prev => prev + 1);
@@ -51,21 +57,12 @@ function Whiteboard() {
     return () => socket.off("game-canvas-submitted");
   }, [socket]);
 
-  const handleTimeUp = () => {
-    if (canvasSubmittedRef.current) return;
-    canvasSubmittedRef.current = true;
-    const canvas = canvasRef.current;
-    if (canvas) game.submitCanvas(canvas.toDataURL());
-  };
-
   const handleHostSubmitWord = (word, hints) => {
     setCurrentHints(hints);
     game.submitWord(word);
-    // Broadcast hints to all players
     socket.emit("game-hints", { roomId, hints });
   };
 
-  // Listen for hints
   useEffect(() => {
     socket.on("game-hints", ({ hints }) => setCurrentHints(hints));
     return () => socket.off("game-hints");
@@ -127,7 +124,6 @@ function Whiteboard() {
         )}
       </div>
 
-      {/* Game overlays */}
       {showSetup && (
         <GameSetup
           playerCount={onlineUsers.length}

@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 
 export default function useGame(socket, roomId, userName, onlineUsers) {
-  const [gamePhase, setGamePhase] = useState("idle"); // idle | setup | host-turn | drawing | reveal | scoring | game-over
+  const [gamePhase, setGamePhase] = useState("idle");
   const [players, setPlayers] = useState([]);
   const [scores, setScores] = useState({});
   const [currentRound, setCurrentRound] = useState(0);
   const [totalRounds, setTotalRounds] = useState(3);
   const [hostIndex, setHostIndex] = useState(0);
   const [word, setWord] = useState("");
-  const [revealData, setRevealData] = useState(null); // { anonymous, word }
+  const [revealData, setRevealData] = useState(null);
   const [roundWinner, setRoundWinner] = useState(null);
   const [gameWinner, setGameWinner] = useState(null);
   const [myVote, setMyVote] = useState(null);
@@ -16,6 +16,21 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
   const timerRef = useRef(null);
 
   const isHost = players.length > 0 && players[hostIndex % players.length] === userName;
+
+  const resetGame = () => {
+    setGamePhase("idle");
+    setPlayers([]);
+    setScores({});
+    setCurrentRound(0);
+    setHostIndex(0);
+    setWord("");
+    setRevealData(null);
+    setRoundWinner(null);
+    setGameWinner(null);
+    setMyVote(null);
+    clearInterval(timerRef.current);
+    setTimer(0);
+  };
 
   useEffect(() => {
     socket.on("game-state", (state) => {
@@ -26,18 +41,15 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setTotalRounds(state.totalRounds || 3);
       setHostIndex(state.hostIndex || 0);
     });
-
     socket.on("game-phase", ({ phase }) => setGamePhase(phase));
-
     socket.on("game-word-confirmed", ({ word }) => setWord(word));
-
     socket.on("game-reveal", (data) => {
       setRevealData(data);
       setGamePhase("reveal");
       setMyVote(null);
-      stopTimer();
+      clearInterval(timerRef.current);
+      setTimer(0);
     });
-
     socket.on("game-round-end", ({ scores, roundWinner, round, totalRounds }) => {
       setScores(scores);
       setRoundWinner(roundWinner);
@@ -45,7 +57,6 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setCurrentRound(round);
       setTotalRounds(totalRounds);
     });
-
     socket.on("game-next-round", ({ round, hostIndex, players }) => {
       setCurrentRound(round);
       setHostIndex(hostIndex);
@@ -55,17 +66,14 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setRevealData(null);
       setWord("");
     });
-
     socket.on("game-over", ({ scores, winner }) => {
       setScores(scores);
       setGameWinner(winner);
       setGamePhase("game-over");
     });
-
     socket.on("game-ended", () => {
       resetGame();
     });
-
     return () => {
       socket.off("game-state");
       socket.off("game-phase");
@@ -76,7 +84,8 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       socket.off("game-over");
       socket.off("game-ended");
     };
-  }, [socket]); // eslint-disable-line // eslint-disable-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
 
   const startTimer = (seconds, onDone) => {
     setTimer(seconds);
@@ -93,13 +102,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
     }, 1000);
   };
 
-  const stopTimer = () => {
-    clearInterval(timerRef.current);
-    setTimer(0);
-  };
-
   const startGame = (rounds) => {
-    setTotalRounds(rounds);
     socket.emit("game-setup", { roomId, totalRounds: rounds });
   };
 
@@ -122,25 +125,11 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
     socket.emit("game-end", { roomId });
   };
 
-  const resetGame = () => {
-    setGamePhase("idle");
-    setPlayers([]);
-    setScores({});
-    setCurrentRound(0);
-    setHostIndex(0);
-    setWord("");
-    setRevealData(null);
-    setRoundWinner(null);
-    setGameWinner(null);
-    setMyVote(null);
-    stopTimer();
-  };
-
   return {
     gamePhase, players, scores, currentRound, totalRounds,
     hostIndex, word, revealData, roundWinner, gameWinner,
     isHost, myVote, timer,
     startGame, submitWord, submitCanvas, castVote, endGame,
-    startTimer, stopTimer,
+    startTimer,
   };
 }

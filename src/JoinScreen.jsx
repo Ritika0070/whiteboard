@@ -1,41 +1,44 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 
-function JoinScreen({ onJoin }) {
+export default function JoinScreen({ onJoin }) {
   const [name, setName] = useState("");
 
-  const handleJoin = () => {
-    if (name.trim() === "") return;
-    onJoin(name.trim());
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleJoin();
-  };
-
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Join Whiteboard</h1>
-      <p className="text-gray-500 mb-8">Enter your name to start drawing</p>
-
-      <div className="bg-white rounded-2xl shadow-md p-8 w-80 flex flex-col gap-4">
+    <div style={{ minHeight: "100vh", background: "#0f0f0f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', sans-serif" }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "24px", padding: "40px", width: "100%", maxWidth: "380px", textAlign: "center" }}
+      >
+        <motion.div
+          animate={{ rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{ fontSize: "40px", marginBottom: "16px" }}
+        >
+          ✏️
+        </motion.div>
+        <h2 style={{ color: "white", fontSize: "22px", fontWeight: 700, marginBottom: "8px" }}>Join the Room</h2>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", marginBottom: "24px" }}>Enter your name to start drawing</p>
         <input
           type="text"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => e.key === "Enter" && name.trim() && onJoin(name.trim())}
           autoFocus
-          className="border border-gray-300 rounded-xl px-4 py-3 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+          style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "white", fontSize: "14px", outline: "none", marginBottom: "12px", boxSizing: "border-box" }}
         />
-        <button
-          onClick={handleJoin}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition"
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => name.trim() && onJoin(name.trim())}
+          style={{ width: "100%", padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #FF6B6B, #C77DFF)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
         >
-          Join Room
-        </button>
-      </div>
+          Start Drawing
+        </motion.button>
+      </motion.div>
     </div>
   );
 }
-
-export default JoinScreen;

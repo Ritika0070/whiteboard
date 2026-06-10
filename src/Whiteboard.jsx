@@ -41,7 +41,7 @@ function Whiteboard() {
     if (isDrawingPhase && game.isHost) {
       setSubmittedCount(0);
     }
-  }, [isDrawingPhase]);
+  }, [isDrawingPhase]); // eslint-disable-line
 
   // Track submitted count
   useEffect(() => {

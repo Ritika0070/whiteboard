@@ -76,7 +76,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       socket.off("game-over");
       socket.off("game-ended");
     };
-  }, [socket]);
+  }, [socket]); // eslint-disable-line // eslint-disable-line
 
   const startTimer = (seconds, onDone) => {
     setTimer(seconds);

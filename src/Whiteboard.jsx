@@ -17,7 +17,7 @@ function Whiteboard() {
     socket,
   } = useWhiteboard(roomId, userName);
 
-  if (!userName) return <JoinScreen onJoin={(name) => setUserName(name)} />;
+  if (!userName) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "white" }}>

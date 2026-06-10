@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import Toolbar from "./Toolbar";
 import ChatSidebar from "./ChatSidebar";
@@ -6,7 +7,8 @@ import useWhiteboard from "./useWhiteboard";
 
 function Whiteboard() {
   const { roomId } = useParams();
-  const [userName] = useState(null);
+  const location = useLocation();
+  const [userName] = useState(location.state?.userName || null);
   const [chatOpen, setChatOpen] = useState(false);
 
   const {

@@ -2,35 +2,77 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const COLORS = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#C77DFF", "#FF9A3C"];
-
-function FloatingBlob({ x, y, color, size }) {
+// Wobbly SVG doodle shapes
+function Cloud({ x, y, size = 1 }) {
   return (
-    <motion.div
-      style={{
-        position: "absolute", left: x, top: y,
-        width: size, height: size, borderRadius: "50%",
-        background: color, opacity: 0.18, filter: "blur(40px)",
-        zIndex: 0,
-      }}
-      animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
-      transition={{ duration: 6 + Math.random() * 4, repeat: Infinity, ease: "easeInOut" }}
-    />
+    <motion.svg
+      style={{ position: "absolute", left: x, top: y, opacity: 0.85 }}
+      width={120 * size} height={70 * size} viewBox="0 0 120 70"
+      animate={{ y: [0, -10, 0] }}
+      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <ellipse cx="60" cy="45" rx="50" ry="25" fill="#fff" stroke="#d4c5a9" strokeWidth="2" strokeDasharray="4 2" />
+      <ellipse cx="40" cy="35" rx="28" ry="22" fill="#fff" stroke="#d4c5a9" strokeWidth="2" strokeDasharray="4 2" />
+      <ellipse cx="75" cy="32" rx="24" ry="20" fill="#fff" stroke="#d4c5a9" strokeWidth="2" strokeDasharray="4 2" />
+    </motion.svg>
   );
 }
 
-function DoodleStroke({ x, y, rotate, color }) {
+function Star({ x, y, color }) {
   return (
-    <motion.div
-      style={{
-        position: "absolute", left: x, top: y,
-        width: "60px", height: "6px", borderRadius: "99px",
-        background: color, opacity: 0.5, rotate,
-        zIndex: 0,
-      }}
-      animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
-      transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, ease: "easeInOut" }}
-    />
+    <motion.svg style={{ position: "absolute", left: x, top: y }} width="24" height="24" viewBox="0 0 24 24"
+      animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.2, 1] }}
+      transition={{ duration: 3 + Math.random() * 2, repeat: Infinity }}
+    >
+      <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" fill={color} stroke={color} strokeWidth="1" opacity="0.8" />
+    </motion.svg>
+  );
+}
+
+function Pencil({ x, y, rotate = 0 }) {
+  return (
+    <motion.svg style={{ position: "absolute", left: x, top: y }} width="48" height="48" viewBox="0 0 48 48"
+      animate={{ rotate: [rotate, rotate + 8, rotate - 8, rotate] }}
+      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <rect x="10" y="4" width="12" height="36" rx="2" fill="#FFD93D" stroke="#c8a200" strokeWidth="1.5" />
+      <polygon points="10,40 22,40 16,48" fill="#f4a261" stroke="#c8a200" strokeWidth="1" />
+      <rect x="10" y="4" width="12" height="7" rx="2" fill="#ff6b6b" stroke="#c8a200" strokeWidth="1.5" />
+      <rect x="10" y="36" width="12" height="4" fill="#ffe0b2" stroke="#c8a200" strokeWidth="1" />
+    </motion.svg>
+  );
+}
+
+function Crayon({ x, y, color, rotate = 0 }) {
+  return (
+    <motion.svg style={{ position: "absolute", left: x, top: y }} width="40" height="40" viewBox="0 0 40 40"
+      animate={{ y: [0, -8, 0] }}
+      transition={{ duration: 3 + Math.random(), repeat: Infinity, ease: "easeInOut" }}
+      initial={{ rotate }}
+    >
+      <rect x="12" y="6" width="10" height="26" rx="2" fill={color} stroke="#00000022" strokeWidth="1.5" />
+      <polygon points="12,32 22,32 17,40" fill={color} stroke="#00000022" strokeWidth="1" />
+      <rect x="12" y="6" width="10" height="6" rx="2" fill="white" opacity="0.4" />
+    </motion.svg>
+  );
+}
+
+function WobblyCircle({ x, y, color, size }) {
+  return (
+    <motion.svg style={{ position: "absolute", left: x, top: y, opacity: 0.25 }} width={size} height={size} viewBox="0 0 100 100"
+      animate={{ scale: [1, 1.08, 1], rotate: [0, 10, 0] }}
+      transition={{ duration: 5, repeat: Infinity }}
+    >
+      <ellipse cx="50" cy="50" rx="45" ry="40" fill={color} />
+    </motion.svg>
+  );
+}
+
+function DoodleLine({ x, y, width, color, rotate = 0 }) {
+  return (
+    <motion.svg style={{ position: "absolute", left: x, top: y, transform: `rotate(${rotate}deg)`, opacity: 0.6 }} width={width} height="12" viewBox={`0 0 ${width} 12`}>
+      <path d={`M 0 6 Q ${width / 4} 2 ${width / 2} 6 Q ${(width * 3) / 4} 10 ${width} 6`} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+    </motion.svg>
   );
 }
 
@@ -42,98 +84,122 @@ export default function Home() {
 
   const handleCreate = () => {
     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-    if (userName.trim()) navigate(`/room/${id}`, { state: { userName } });
+    if (userName.trim()) navigate(`/room/${id}`);
   };
 
   const handleJoin = () => {
-    if (roomId.trim() && userName.trim()) navigate(`/room/${roomId.trim()}`, { state: { userName } });
+    if (roomId.trim() && userName.trim()) navigate(`/room/${roomId.trim()}`);
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0f0f0f", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#fdf6ec", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", fontFamily: "'Segoe UI', Comic Sans MS, cursive" }}>
 
       {/* Background blobs */}
-      <FloatingBlob x="5%" y="10%" color="#FF6B6B" size="300px" />
-      <FloatingBlob x="70%" y="5%" color="#4D96FF" size="250px" />
-      <FloatingBlob x="80%" y="60%" color="#C77DFF" size="350px" />
-      <FloatingBlob x="10%" y="65%" color="#6BCB77" size="200px" />
-      <FloatingBlob x="45%" y="80%" color="#FFD93D" size="220px" />
+      <WobblyCircle x="-60px" y="-60px" color="#FFD93D" size={300} />
+      <WobblyCircle x="70%" y="60%" color="#FF6B6B" size={260} />
+      <WobblyCircle x="60%" y="-40px" color="#6BCB77" size={200} />
+      <WobblyCircle x="-20px" y="60%" color="#4D96FF" size={220} />
 
-      {/* Doodle strokes */}
-      <DoodleStroke x="8%" y="20%" rotate="-15deg" color="#FF6B6B" />
-      <DoodleStroke x="75%" y="15%" rotate="20deg" color="#FFD93D" />
-      <DoodleStroke x="85%" y="50%" rotate="-30deg" color="#C77DFF" />
-      <DoodleStroke x="5%" y="75%" rotate="10deg" color="#6BCB77" />
-      <DoodleStroke x="55%" y="88%" rotate="-20deg" color="#4D96FF" />
-      <DoodleStroke x="30%" y="12%" rotate="25deg" color="#FF9A3C" />
+      {/* Clouds */}
+      <Cloud x="5%" y="8%" size={1.2} />
+      <Cloud x="60%" y="5%" size={0.9} />
+      <Cloud x="75%" y="55%" size={0.8} />
 
-      {/* Main card */}
+      {/* Stars */}
+      <Star x="15%" y="15%" color="#FFD93D" />
+      <Star x="80%" y="20%" color="#FF6B6B" />
+      <Star x="10%" y="70%" color="#6BCB77" />
+      <Star x="88%" y="75%" color="#4D96FF" />
+      <Star x="50%" y="90%" color="#C77DFF" />
+
+      {/* Pencils & Crayons */}
+      <Pencil x="3%" y="40%" rotate={-20} />
+      <Pencil x="88%" y="35%" rotate={15} />
+      <Crayon x="20%" y="82%" color="#FF6B6B" rotate={10} />
+      <Crayon x="72%" y="78%" color="#4D96FF" rotate={-15} />
+      <Crayon x="45%" y="5%" color="#C77DFF" rotate={5} />
+
+      {/* Doodle lines */}
+      <DoodleLine x="5%" y="30%" width={80} color="#FFD93D" rotate={-10} />
+      <DoodleLine x="75%" y="40%" width={70} color="#FF6B6B" rotate={12} />
+      <DoodleLine x="30%" y="88%" width={90} color="#6BCB77" rotate={-5} />
+
+      {/* Main Card */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        style={{ position: "relative", zIndex: 10, background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "28px", padding: "48px 40px", width: "100%", maxWidth: "440px", textAlign: "center" }}
+        initial={{ opacity: 0, y: 50, rotate: -1 }}
+        animate={{ opacity: 1, y: 0, rotate: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        style={{
+          position: "relative", zIndex: 10,
+          background: "white",
+          border: "3px solid #1a1a1a",
+          borderRadius: "24px",
+          boxShadow: "6px 6px 0px #1a1a1a",
+          padding: "40px 36px",
+          width: "100%", maxWidth: "420px",
+          textAlign: "center",
+        }}
       >
-        {/* Logo */}
+        {/* Title */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "64px", height: "64px", borderRadius: "18px", background: "linear-gradient(135deg, #FF6B6B, #C77DFF)", marginBottom: "16px", fontSize: "28px" }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 180 }}
         >
-          ✏️
+          <div style={{ display: "inline-block", background: "#FFD93D", border: "2px solid #1a1a1a", borderRadius: "12px", padding: "6px 16px", fontSize: "12px", fontWeight: 700, letterSpacing: "2px", marginBottom: "12px", boxShadow: "3px 3px 0 #1a1a1a" }}>
+            LET'S DRAW TOGETHER
+          </div>
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          style={{ fontSize: "32px", fontWeight: 800, color: "white", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}
+          style={{ fontSize: "42px", fontWeight: 900, color: "#1a1a1a", margin: "0 0 4px 0", lineHeight: 1.1, letterSpacing: "-1px" }}
         >
           Scribble
+          <span style={{ color: "#FF6B6B" }}>!</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          style={{ color: "rgba(255,255,255,0.5)", fontSize: "14px", marginBottom: "32px" }}
+          style={{ color: "#888", fontSize: "14px", marginBottom: "28px", fontStyle: "italic" }}
         >
-          Real-time collaborative drawing board
+          draw, doodle & vibe with friends ✨
         </motion.p>
 
-        {/* Name input always visible */}
+        {/* Wavy underline */}
+        <DoodleLine x="25%" y="-8px" width={200} color="#FFD93D" />
+
+        {/* Name input */}
         <motion.input
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           type="text"
-          placeholder="Your name"
+          placeholder="your name..."
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
-          style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "white", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box" }}
+          style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box", fontFamily: "inherit", boxShadow: "3px 3px 0 #1a1a1a" }}
         />
 
         {!mode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            style={{ display: "flex", gap: "12px" }}
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ display: "flex", gap: "12px" }}>
             <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
+              whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
               onClick={() => setMode("create")}
-              style={{ flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #FF6B6B, #FF9A3C)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+              style={{ flex: 1, padding: "13px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#FF6B6B", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", boxShadow: "4px 4px 0 #1a1a1a", fontFamily: "inherit" }}
             >
               Create Room
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
+              whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
               onClick={() => setMode("join")}
-              style={{ flex: 1, padding: "13px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+              style={{ flex: 1, padding: "13px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#4D96FF", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", boxShadow: "4px 4px 0 #1a1a1a", fontFamily: "inherit" }}
             >
               Join Room
             </motion.button>
@@ -142,15 +208,16 @@ export default function Home() {
 
         {mode === "create" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", margin: "0 0 4px 0" }}>A new room ID will be auto-generated</p>
+            <p style={{ color: "#aaa", fontSize: "13px", margin: "0 0 4px 0", fontStyle: "italic" }}>a random room ID will be created for you</p>
             <motion.button
-              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
+              whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
               onClick={handleCreate}
-              style={{ padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #FF6B6B, #FF9A3C)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+              style={{ padding: "13px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#6BCB77", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", boxShadow: "4px 4px 0 #1a1a1a", fontFamily: "inherit" }}
             >
-              Let's Go
+              Let's Go!
             </motion.button>
-            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: "13px" }}>Back</button>
+            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
           </motion.div>
         )}
 
@@ -158,35 +225,33 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <input
               type="text"
-              placeholder="Enter Room ID"
+              placeholder="enter room ID..."
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-              style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "white", fontSize: "14px", outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontSize: "14px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", boxShadow: "3px 3px 0 #1a1a1a" }}
             />
             <motion.button
-              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -3, boxShadow: "6px 8px 0 #1a1a1a" }}
+              whileTap={{ y: 2, boxShadow: "2px 2px 0 #1a1a1a" }}
               onClick={handleJoin}
-              style={{ padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #4D96FF, #C77DFF)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+              style={{ padding: "13px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#C77DFF", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", boxShadow: "4px 4px 0 #1a1a1a", fontFamily: "inherit" }}
             >
               Join Room
             </motion.button>
-            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: "13px" }}>Back</button>
+            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>← Back</button>
           </motion.div>
         )}
 
-        {/* Color dots decoration */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "28px" }}>
-          {COLORS.map((c, i) => (
-            <motion.div
-              key={i}
-              style={{ width: "10px", height: "10px", borderRadius: "50%", background: c }}
+        {/* Color dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "24px" }}>
+          {["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#C77DFF", "#FF9A3C"].map((c, i) => (
+            <motion.div key={i} style={{ width: "12px", height: "12px", borderRadius: "50%", background: c, border: "2px solid #1a1a1a" }}
               animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
             />
           ))}
         </div>
-
       </motion.div>
     </div>
   );

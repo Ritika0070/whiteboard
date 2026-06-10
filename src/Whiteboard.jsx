@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import JoinScreen from "./JoinScreen";
 import Toolbar from "./Toolbar";
 import ChatSidebar from "./ChatSidebar";
 import useWhiteboard from "./useWhiteboard";

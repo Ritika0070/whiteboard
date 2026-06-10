@@ -31,9 +31,16 @@ export default function HostScreen({ onSubmit, round, totalRounds }) {
           max_tokens: 1000,
           messages: [{
             role: "user",
-            content: `Generate exactly 3 short, cryptic hints for the word/phrase: "${word}". 
-Each hint should be 3-6 words, poetic and vague — NOT too obvious. 
-Respond ONLY with a JSON array like: ["hint one", "hint two", "hint three"]`
+            content: `You are creating hints for a drawing game. The secret word/phrase is: "${word}"
+
+Generate exactly 3 hints. Rules:
+- Each hint must be SPECIFIC to this exact word — not generic
+- Hints should be indirect/metaphorical, not literal descriptions
+- Each hint max 6 words
+- Do NOT use the word itself or obvious synonyms
+- Make them progressively easier (hint 1 hardest, hint 3 easiest)
+
+Respond ONLY with a valid JSON array, no explanation: ["hint1", "hint2", "hint3"]`
           }]
         })
       });
@@ -43,7 +50,7 @@ Respond ONLY with a JSON array like: ["hint one", "hint two", "hint three"]`
       const parsed = JSON.parse(clean);
       setHints(parsed);
     } catch (e) {
-      setHints(["Something mysterious", "Look closely", "Think differently"]);
+      setHints(["Think about its purpose", "Where would you find this?", "What does it remind you of?"]);
     }
     setLoadingHints(false);
   };

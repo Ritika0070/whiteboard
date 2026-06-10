@@ -10,6 +10,7 @@ export default function useWhiteboard(roomId, userName) {
   const lastPos = useRef(null);
   const historyRef = useRef([]);
   const redoRef = useRef([]);
+  const privateMode = useRef(false); // blocks incoming draws
 
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
@@ -32,7 +33,10 @@ export default function useWhiteboard(roomId, userName) {
       strokes.forEach((s) => drawLine(s));
     });
 
-    socket.on("draw", (data) => drawLine(data));
+    socket.on("draw", (data) => {
+      if (privateMode.current) return; // ignore in drawing phase
+      drawLine(data);
+    });
 
     socket.on("clear", () => {
       const ctx = canvas.getContext("2d");
@@ -49,7 +53,23 @@ export default function useWhiteboard(roomId, userName) {
       setCursors((prev) => { const u = { ...prev }; delete u[id]; return u; });
     });
 
-    socket.on("chat-message", () => {});
+    // Game events that affect canvas
+    socket.on("game-phase", ({ phase }) => {
+      if (phase === "drawing") {
+        // Clear canvas for fresh private drawing
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        historyRef.current = [];
+        redoRef.current = [];
+        privateMode.current = true;
+      } else {
+        privateMode.current = false;
+      }
+    });
+
+    socket.on("game-ended", () => {
+      privateMode.current = false;
+    });
 
     const preventScroll = (e) => e.preventDefault();
     canvas.addEventListener("touchstart", preventScroll, { passive: false });
@@ -58,11 +78,11 @@ export default function useWhiteboard(roomId, userName) {
     return () => {
       socket.off("draw"); socket.off("clear"); socket.off("load-strokes");
       socket.off("cursor-move"); socket.off("user-left");
-      socket.off("online-users"); socket.off("chat-message");
+      socket.off("online-users"); socket.off("game-phase"); socket.off("game-ended");
       canvas.removeEventListener("touchstart", preventScroll);
       canvas.removeEventListener("touchmove", preventScroll);
     };
-  }, [roomId, userName]);
+  }, [roomId, userName]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const drawLine = ({ x0, y0, x1, y1, color, brushSize, tool }) => {
     const canvas = canvasRef.current;
@@ -88,10 +108,7 @@ export default function useWhiteboard(roomId, userName) {
     const prev = historyRef.current.pop();
     const img = new Image();
     img.src = prev;
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
+    img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
   };
 
   const redo = () => {
@@ -102,10 +119,7 @@ export default function useWhiteboard(roomId, userName) {
     const next = redoRef.current.pop();
     const img = new Image();
     img.src = next;
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
+    img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
   };
 
   const getPos = (e) => {
@@ -115,11 +129,7 @@ export default function useWhiteboard(roomId, userName) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e) => {
-    saveSnapshot();
-    isDrawing.current = true;
-    lastPos.current = getPos(e);
-  };
+  const startDrawing = (e) => { saveSnapshot(); isDrawing.current = true; lastPos.current = getPos(e); };
 
   const draw = (e) => {
     const currentPos = getPos(e);
@@ -127,7 +137,7 @@ export default function useWhiteboard(roomId, userName) {
     if (!isDrawing.current) return;
     const data = { x0: lastPos.current.x, y0: lastPos.current.y, x1: currentPos.x, y1: currentPos.y, color, brushSize, tool, roomId, userName };
     drawLine(data);
-    socket.emit("draw", data);
+    if (!privateMode.current) socket.emit("draw", data); // don't broadcast in private mode
     lastPos.current = currentPos;
   };
 
@@ -137,9 +147,8 @@ export default function useWhiteboard(roomId, userName) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    historyRef.current = [];
-    redoRef.current = [];
-    socket.emit("clear", roomId);
+    historyRef.current = []; redoRef.current = [];
+    if (!privateMode.current) socket.emit("clear", roomId);
   };
 
   const downloadCanvas = () => {

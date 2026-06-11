@@ -23,32 +23,16 @@ export default function HostScreen({ onSubmit, round, totalRounds }) {
     if (!word.trim()) return;
     setLoadingHints(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{
-            role: "user",
-            content: `You are creating hints for a drawing game. The secret word/phrase is: "${word}"
-
-Generate exactly 3 hints. Rules:
-- Each hint must be SPECIFIC to this exact word — not generic
-- Hints should be indirect/metaphorical, not literal descriptions
-- Each hint max 6 words
-- Do NOT use the word itself or obvious synonyms
-- Make them progressively easier (hint 1 hardest, hint 3 easiest)
-
-Respond ONLY with a valid JSON array, no explanation: ["hint1", "hint2", "hint3"]`
-          }]
-        })
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL || "http://localhost:4000"}/generate-hints`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ word: word.trim() })
+        }
+      );
       const data = await res.json();
-      const text = data.content?.[0]?.text || "[]";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setHints(parsed);
+      setHints(data.hints || []);
     } catch (e) {
       setHints(["Think about its purpose", "Where would you find this?", "What does it remind you of?"]);
     }
@@ -72,7 +56,9 @@ Respond ONLY with a valid JSON array, no explanation: ["hint1", "hint2", "hint3"
         </div>
         <div style={{ fontSize: "32px", marginBottom: "8px" }}>👑</div>
         <h3 style={{ fontWeight: 900, fontSize: "20px", color: "#1a1a1a", margin: "0 0 4px 0" }}>You're the Host!</h3>
-        <p style={{ color: "#888", fontSize: "13px", marginBottom: "24px" }}>Give a secret word. Others will draw it based on your hints.</p>
+        <p style={{ color: "#888", fontSize: "13px", marginBottom: "24px" }}>
+          Give a secret word. Others will draw it based on your hints.
+        </p>
 
         <input
           type="text"
@@ -83,19 +69,28 @@ Respond ONLY with a valid JSON array, no explanation: ["hint1", "hint2", "hint3"
         />
 
         <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} onClick={randomWord}
-            style={{ flex: 1, padding: "9px", borderRadius: "10px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontWeight: 700, fontSize: "12px", cursor: "pointer", boxShadow: "2px 2px 0 #1a1a1a" }}>
+          <motion.button
+            whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
+            onClick={randomWord}
+            style={{ flex: 1, padding: "9px", borderRadius: "10px", border: "2px solid #1a1a1a", background: "#fdf6ec", fontWeight: 700, fontSize: "12px", cursor: "pointer", boxShadow: "2px 2px 0 #1a1a1a" }}
+          >
             Random Word
           </motion.button>
-          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} onClick={generateHints} disabled={!word.trim() || loadingHints}
-            style={{ flex: 1, padding: "9px", borderRadius: "10px", border: "2px solid #1a1a1a", background: loadingHints ? "#e5e7eb" : "#C77DFF", color: loadingHints ? "#999" : "white", fontWeight: 700, fontSize: "12px", cursor: word.trim() ? "pointer" : "not-allowed", boxShadow: "2px 2px 0 #1a1a1a" }}>
+          <motion.button
+            whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
+            onClick={generateHints}
+            disabled={!word.trim() || loadingHints}
+            style={{ flex: 1, padding: "9px", borderRadius: "10px", border: "2px solid #1a1a1a", background: loadingHints ? "#e5e7eb" : "#C77DFF", color: loadingHints ? "#999" : "white", fontWeight: 700, fontSize: "12px", cursor: word.trim() && !loadingHints ? "pointer" : "not-allowed", boxShadow: "2px 2px 0 #1a1a1a" }}
+          >
             {loadingHints ? "Generating..." : "AI Hints"}
           </motion.button>
         </div>
 
         {hints.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            style={{ background: "#fdf6ec", border: "2px dashed #d4c5a9", borderRadius: "12px", padding: "14px", marginBottom: "16px", textAlign: "left" }}>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            style={{ background: "#fdf6ec", border: "2px dashed #d4c5a9", borderRadius: "12px", padding: "14px", marginBottom: "16px", textAlign: "left" }}
+          >
             <p style={{ fontSize: "11px", fontWeight: 700, color: "#888", marginBottom: "8px", letterSpacing: "1px" }}>HINTS FOR DRAWERS:</p>
             {hints.map((h, i) => (
               <div key={i} style={{ fontSize: "13px", color: "#374151", marginBottom: "4px" }}>

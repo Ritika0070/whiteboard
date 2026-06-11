@@ -42,7 +42,7 @@ function Whiteboard() {
   useEffect(() => {
     if (isDrawingPhase && !game.isHost) {
       canvasSubmittedRef.current = false;
-      game.startTimer(90, handleTimeUp);
+      game.startTimer(game.drawTime, handleTimeUp);
     }
     if (isDrawingPhase && game.isHost) {
       setSubmittedCount(0);
@@ -120,14 +120,19 @@ function Whiteboard() {
         </div>
 
         {chatOpen && (
-          <ChatSidebar socket={socket} roomId={roomId} userName={userName} onClose={() => setChatOpen(false)} />
+          <ChatSidebar
+            socket={socket}
+            roomId={roomId}
+            userName={userName}
+            onClose={() => setChatOpen(false)}
+          />
         )}
       </div>
 
       {showSetup && (
         <GameSetup
           playerCount={onlineUsers.length}
-          onStart={(rounds) => { game.startGame(rounds); setShowSetup(false); }}
+          onStart={(rounds, drawTime) => { game.startGame(rounds, drawTime); setShowSetup(false); }}
           onCancel={() => setShowSetup(false)}
         />
       )}

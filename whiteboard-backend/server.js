@@ -68,6 +68,7 @@ function getOrCreateGame(roomId) {
     gameRooms[roomId] = {
       active: false, phase: "idle",
       totalRounds: 3, currentRound: 0,
+      drawTime: 90,
       players: [], scores: {}, hostIndex: 0,
       word: null, canvasImages: {}, votes: {},
     };
@@ -121,9 +122,12 @@ io.on("connection", (socket) => {
     socket.to(data.roomId).emit("game-hints", { hints: data.hints });
   });
 
-  socket.on("game-setup", ({ roomId, totalRounds }) => {
+  // ── GAME EVENTS ──────────────────────────────────────────────
+
+  socket.on("game-setup", ({ roomId, totalRounds, drawTime }) => {
     const game = getOrCreateGame(roomId);
     game.totalRounds = totalRounds;
+    game.drawTime = drawTime || 90;
     game.active = true;
     game.phase = "host-turn";
     game.currentRound = 1;
@@ -227,6 +231,7 @@ io.on("connection", (socket) => {
             round: game.currentRound,
             hostIndex: game.hostIndex % game.players.length,
             players: game.players,
+            drawTime: game.drawTime,
           });
         }, 3000);
       }
@@ -239,6 +244,8 @@ io.on("connection", (socket) => {
     game.phase = "idle";
     io.to(roomId).emit("game-ended");
   });
+
+  // ─────────────────────────────────────────────────────────────
 
   socket.on("disconnect", () => {
     const roomId = socket.data.roomId;

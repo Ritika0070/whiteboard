@@ -3,13 +3,14 @@ import { motion } from "framer-motion";
 
 export default function GameSetup({ onStart, onCancel, playerCount }) {
   const [rounds, setRounds] = useState(3);
+  const [drawTime, setDrawTime] = useState(90);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        style={{ background: "white", border: "3px solid #1a1a1a", borderRadius: "24px", boxShadow: "8px 8px 0 #1a1a1a", padding: "40px 36px", maxWidth: "380px", width: "90%", textAlign: "center" }}
+        style={{ background: "white", border: "3px solid #1a1a1a", borderRadius: "24px", boxShadow: "8px 8px 0 #1a1a1a", padding: "40px 36px", maxWidth: "400px", width: "90%", textAlign: "center" }}
       >
         <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎨</div>
         <h2 style={{ fontSize: "26px", fontWeight: 900, color: "#1a1a1a", margin: "0 0 8px 0" }}>Doodle Wars!</h2>
@@ -17,8 +18,9 @@ export default function GameSetup({ onStart, onCancel, playerCount }) {
           Host gives a word → others draw privately → everyone votes → best drawing wins!
         </p>
 
+        {/* Rounds */}
         <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: "12px" }}>How many rounds?</p>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "28px" }}>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "24px" }}>
           {[3, 4, 5].map(r => (
             <motion.button
               key={r}
@@ -38,14 +40,36 @@ export default function GameSetup({ onStart, onCancel, playerCount }) {
           ))}
         </div>
 
+        {/* Draw Time */}
+        <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: "12px" }}>Drawing time?</p>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "24px" }}>
+          {[60, 90, 120].map(t => (
+            <motion.button
+              key={t}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setDrawTime(t)}
+              style={{
+                width: "70px", height: "60px", borderRadius: "12px", border: "2px solid #1a1a1a",
+                background: drawTime === t ? "#4D96FF" : "#fdf6ec",
+                color: drawTime === t ? "white" : "#1a1a1a",
+                fontWeight: 800, fontSize: "14px", cursor: "pointer",
+                boxShadow: drawTime === t ? "4px 4px 0 #1a1a1a" : "2px 2px 0 #1a1a1a"
+              }}
+            >
+              {t}s
+            </motion.button>
+          ))}
+        </div>
+
         <p style={{ fontSize: "12px", color: "#aaa", marginBottom: "20px" }}>
-          {playerCount} players · {rounds} rounds · each player gets 1 host turn
+          {playerCount} players · {rounds} rounds · {drawTime} seconds per round
         </p>
 
         <div style={{ display: "flex", gap: "10px" }}>
           <motion.button
             whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
-            onClick={() => onStart(rounds)}
+            onClick={() => onStart(rounds, drawTime)}
             style={{ flex: 1, padding: "13px", borderRadius: "12px", border: "2px solid #1a1a1a", background: "#6BCB77", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", boxShadow: "4px 4px 0 #1a1a1a" }}
           >
             Start Game!

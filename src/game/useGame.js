@@ -13,6 +13,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
   const [gameWinner, setGameWinner] = useState(null);
   const [myVote, setMyVote] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [drawTime, setDrawTime] = useState(90);
   const timerRef = useRef(null);
 
   const isHost = players.length > 0 && players[hostIndex % players.length] === userName;
@@ -40,6 +41,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setCurrentRound(state.currentRound || 1);
       setTotalRounds(state.totalRounds || 3);
       setHostIndex(state.hostIndex || 0);
+      setDrawTime(state.drawTime || 90);
     });
     socket.on("game-phase", ({ phase }) => setGamePhase(phase));
     socket.on("game-word-confirmed", ({ word }) => setWord(word));
@@ -57,7 +59,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setCurrentRound(round);
       setTotalRounds(totalRounds);
     });
-    socket.on("game-next-round", ({ round, hostIndex, players }) => {
+    socket.on("game-next-round", ({ round, hostIndex, players, drawTime }) => {
       setCurrentRound(round);
       setHostIndex(hostIndex);
       setPlayers(players);
@@ -65,15 +67,15 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
       setRoundWinner(null);
       setRevealData(null);
       setWord("");
+      setDrawTime(drawTime || 90);
     });
     socket.on("game-over", ({ scores, winner }) => {
       setScores(scores);
       setGameWinner(winner);
       setGamePhase("game-over");
     });
-    socket.on("game-ended", () => {
-      resetGame();
-    });
+    socket.on("game-ended", () => resetGame());
+
     return () => {
       socket.off("game-state");
       socket.off("game-phase");
@@ -102,8 +104,8 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
     }, 1000);
   };
 
-  const startGame = (rounds) => {
-    socket.emit("game-setup", { roomId, totalRounds: rounds });
+  const startGame = (rounds, drawTime) => {
+    socket.emit("game-setup", { roomId, totalRounds: rounds, drawTime });
   };
 
   const submitWord = (w) => {
@@ -128,7 +130,7 @@ export default function useGame(socket, roomId, userName, onlineUsers) {
   return {
     gamePhase, players, scores, currentRound, totalRounds,
     hostIndex, word, revealData, roundWinner, gameWinner,
-    isHost, myVote, timer,
+    isHost, myVote, timer, drawTime,
     startGame, submitWord, submitCanvas, castVote, endGame,
     startTimer,
   };

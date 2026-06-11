@@ -7,10 +7,11 @@ export default function ChatSidebar({ socket, roomId, userName, onClose }) {
   const chatEndRef = useRef(null);
 
   useEffect(() => {
-    socket.on("chat-message", (data) => {
+    const handleMessage = (data) => {
       setMessages((prev) => [...prev, data]);
-    });
-    return () => socket.off("chat-message");
+    };
+    socket.on("chat-message", handleMessage);
+    return () => socket.off("chat-message", handleMessage);
   }, [socket]);
 
   useEffect(() => {

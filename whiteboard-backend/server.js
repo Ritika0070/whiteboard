@@ -37,7 +37,7 @@ app.post("/generate-hints", async (req, res) => {
           role: "user",
           content: `Drawing game hints for: "${word}"
 Generate exactly 3 hints. Each hint must be SPECIFIC to "${word}" only — not generic.
-Indirect and metaphorical, max 6 words each, progressively easier.
+Simple and easy to understand, max 6 words each, use common words that anyone can guess, progressively easier - last hint should be very obvious.
 Respond ONLY with valid JSON array, no extra text: ["hint1", "hint2", "hint3"]`
         }]
       })

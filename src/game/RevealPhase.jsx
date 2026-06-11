@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export default function RevealPhase({ data, myVote, onVote, isHost, userName }) {
   if (!data) return null;
-  const { anonymous, word, drawerNames } = data;
+  const { anonymous, word } = data;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px" }}>

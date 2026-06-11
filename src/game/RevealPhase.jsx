@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export default function RevealPhase({ data, myVote, onVote, isHost, userName }) {
   if (!data) return null;
-  const { anonymous, word } = data;
+  const { anonymous, word, drawerNames } = data;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px" }}>
@@ -20,37 +20,43 @@ export default function RevealPhase({ data, myVote, onVote, isHost, userName }) 
           <p style={{ color: "#888", fontSize: "13px" }}>
             {myVote !== null
               ? "Vote cast! Waiting for others..."
-              : isHost
-              ? "Pick the best drawing — or 'None Correct' if no one got it!"
               : "Vote for the drawing closest to the word!"}
           </p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "16px" }}>
-          {anonymous.map((item) => (
-            <motion.div
-              key={item.id}
-              whileHover={{ y: myVote === null ? -4 : 0 }}
-              onClick={() => myVote === null && onVote(item.id)}
-              style={{
-                border: myVote === item.id ? "3px solid #FF6B6B" : "2px solid #1a1a1a",
-                borderRadius: "16px", overflow: "hidden",
-                cursor: myVote !== null ? "default" : "pointer",
-                boxShadow: myVote === item.id ? "4px 4px 0 #FF6B6B" : "3px 3px 0 #1a1a1a",
-                background: "#fdf6ec"
-              }}
-            >
-              <img src={item.image} alt={`Drawing ${item.id + 1}`}
-                style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
-              <div style={{ padding: "10px", textAlign: "center" }}>
-                <span style={{ fontSize: "12px", fontWeight: 700 }}>Drawing #{item.id + 1}</span>
-                {myVote === item.id && <span style={{ fontSize: "11px", color: "#FF6B6B", marginLeft: "6px" }}>✓ Your vote</span>}
-              </div>
-            </motion.div>
-          ))}
+          {anonymous.map((item) => {
+            const isMyDrawing = item.drawerName === userName;
+            const cantVote = myVote !== null || isMyDrawing;
+
+            return (
+              <motion.div
+                key={item.id}
+                whileHover={{ y: cantVote ? 0 : -4 }}
+                onClick={() => !cantVote && onVote(item.id)}
+                style={{
+                  border: myVote === item.id ? "3px solid #FF6B6B" : isMyDrawing ? "3px dashed #FFD93D" : "2px solid #1a1a1a",
+                  borderRadius: "16px", overflow: "hidden",
+                  cursor: cantVote ? "default" : "pointer",
+                  boxShadow: myVote === item.id ? "4px 4px 0 #FF6B6B" : "3px 3px 0 #1a1a1a",
+                  background: isMyDrawing ? "#fffbeb" : "#fdf6ec",
+                  opacity: isMyDrawing ? 0.85 : 1
+                }}
+              >
+                <img src={item.image} alt={`Drawing ${item.id + 1}`}
+                  style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
+                <div style={{ padding: "10px", textAlign: "center" }}>
+                  {isMyDrawing
+                    ? <span style={{ fontSize: "12px", fontWeight: 700, color: "#f59e0b" }}>Your Drawing</span>
+                    : <span style={{ fontSize: "12px", fontWeight: 700 }}>Drawing #{item.id + 1}</span>
+                  }
+                  {myVote === item.id && <span style={{ fontSize: "11px", color: "#FF6B6B", marginLeft: "6px" }}>✓ Your vote</span>}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* None Correct option */}
         {myVote === null && (
           <motion.button
             whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
@@ -58,8 +64,7 @@ export default function RevealPhase({ data, myVote, onVote, isHost, userName }) 
             style={{
               width: "100%", padding: "12px", borderRadius: "12px",
               border: "2px dashed #d1d5db", background: "#f9fafb",
-              color: "#888", fontWeight: 700, fontSize: "13px",
-              cursor: "pointer"
+              color: "#888", fontWeight: 700, fontSize: "13px", cursor: "pointer"
             }}
           >
             None of these are correct

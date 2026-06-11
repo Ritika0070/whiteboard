@@ -165,7 +165,7 @@ io.on("connection", (socket) => {
       game.phase = "reveal";
       const entries = Object.entries(game.canvasImages);
       const shuffled = entries.sort(() => Math.random() - 0.5);
-      const anonymous = shuffled.map(([, img], i) => ({ id: i, image: img }));
+      const anonymous = shuffled.map(([name, img], i) => ({ id: i, image: img, drawerName: name }));
       game.shuffledOrder = shuffled.map(([name]) => name);
       io.to(roomId).emit("game-reveal", { anonymous, word: game.word });
     }

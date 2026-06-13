@@ -7,10 +7,11 @@ export default function useWhiteboard(roomId, userName) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const isDrawing = useRef(false);
+  const clickLock = useRef(false);
   const lastPos = useRef(null);
   const historyRef = useRef([]);
   const redoRef = useRef([]);
-  const privateMode = useRef(false); // blocks incoming draws
+  const privateMode = useRef(false);
 
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
@@ -34,7 +35,7 @@ export default function useWhiteboard(roomId, userName) {
     });
 
     socket.on("draw", (data) => {
-      if (privateMode.current) return; // ignore in drawing phase
+      if (privateMode.current) return;
       drawLine(data);
     });
 
@@ -53,22 +54,30 @@ export default function useWhiteboard(roomId, userName) {
       setCursors((prev) => { const u = { ...prev }; delete u[id]; return u; });
     });
 
-    // Game events that affect canvas
     socket.on("game-phase", ({ phase }) => {
       if (phase === "drawing") {
-        // Clear canvas for fresh private drawing
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         historyRef.current = [];
         redoRef.current = [];
         privateMode.current = true;
+        // Reset click lock
+        clickLock.current = false;
+        isDrawing.current = false;
+        lastPos.current = null;
       } else {
         privateMode.current = false;
+        clickLock.current = false;
+        isDrawing.current = false;
+        lastPos.current = null;
       }
     });
 
     socket.on("game-ended", () => {
       privateMode.current = false;
+      clickLock.current = false;
+      isDrawing.current = false;
+      lastPos.current = null;
     });
 
     const preventScroll = (e) => e.preventDefault();
@@ -82,7 +91,8 @@ export default function useWhiteboard(roomId, userName) {
       canvas.removeEventListener("touchstart", preventScroll);
       canvas.removeEventListener("touchmove", preventScroll);
     };
-  }, [roomId, userName]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, userName]);
 
   const drawLine = ({ x0, y0, x1, y1, color, brushSize, tool }) => {
     const canvas = canvasRef.current;
@@ -129,25 +139,50 @@ export default function useWhiteboard(roomId, userName) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e) => { saveSnapshot(); isDrawing.current = true; lastPos.current = getPos(e); };
+  const startDrawing = (e) => {
+    if (clickLock.current) {
+      // Dobara click — drawing band karo
+      clickLock.current = false;
+      isDrawing.current = false;
+      lastPos.current = null;
+    } else {
+      // Pehla click — drawing shuru
+      saveSnapshot();
+      clickLock.current = true;
+      isDrawing.current = true;
+      lastPos.current = getPos(e);
+    }
+  };
 
   const draw = (e) => {
     const currentPos = getPos(e);
     socket.emit("cursor-move", { roomId, x: currentPos.x, y: currentPos.y, name: userName });
     if (!isDrawing.current) return;
-    const data = { x0: lastPos.current.x, y0: lastPos.current.y, x1: currentPos.x, y1: currentPos.y, color, brushSize, tool, roomId, userName };
+    const data = {
+      x0: lastPos.current.x, y0: lastPos.current.y,
+      x1: currentPos.x, y1: currentPos.y,
+      color, brushSize, tool, roomId, userName
+    };
     drawLine(data);
-    if (!privateMode.current) socket.emit("draw", data); // don't broadcast in private mode
+    if (!privateMode.current) socket.emit("draw", data);
     lastPos.current = currentPos;
   };
 
-  const stopDrawing = () => { isDrawing.current = false; lastPos.current = null; };
+  const stopDrawing = () => {
+    // Click lock mode mein stopDrawing ignore hoga
+    if (clickLock.current) return;
+    isDrawing.current = false;
+    lastPos.current = null;
+  };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    historyRef.current = []; redoRef.current = [];
+    historyRef.current = [];
+    redoRef.current = [];
+    clickLock.current = false;
+    isDrawing.current = false;
     if (!privateMode.current) socket.emit("clear", roomId);
   };
 
